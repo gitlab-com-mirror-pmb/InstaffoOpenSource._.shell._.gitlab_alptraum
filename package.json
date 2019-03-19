@@ -1,0 +1,26 @@
+{ "name": "gitlab_alptraum",
+  "version": "0.0.1",
+  "description": "Install bash and git into alpine, then maybe clone a repo and run a command.",
+  "keywords": [
+    "alpine",
+    "docker",
+    "gitlab"
+  ],
+  "author": "Instaffo GmbH",
+  "contributors": [
+    "Marcel Krause (https://gitlab.com/mkr_instaffo)"
+  ],
+  "license": "MIT",
+  "homepage": "https://gitlab.com/InstaffoOpenSource/shell/gitlab_alptraum/#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://gitlab.com/InstaffoOpenSource/shell/gitlab_alptraum.git"
+  },
+  "bugs": {
+    "url": "https://gitlab.com/InstaffoOpenSource/shell/gitlab_alptraum/issues"
+  },
+  "dependencies": {
+  },
+  "devDependencies": {
+  }
+}
