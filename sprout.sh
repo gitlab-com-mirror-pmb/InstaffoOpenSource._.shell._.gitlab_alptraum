@@ -72,14 +72,17 @@ sprout_alpine_sanity () {
     git
     grep
     moreutils
-    sed
     openssh-client    # for git+ssh://… repos
+    sed
+    tar
+    unzip
     util-linux
     wget
-    ' | sed -nre '
+    zip
+    '"$ALPTRAUM_EXTRA_PKG" | sed -nre '
     s~\s*#.*$~~
     s~^\s+([a-z])~\1~p
-    ') || return $?
+    ' | sort -u) || return $?
   echo
 }
 
@@ -101,7 +104,6 @@ sprout_maybe_clone_gcu () {
   local REPO_NAME='GitLabCIUtilities'
   flowers "Install $REPO_NAME:"
   GCU_PATH="/usr/share/instaffo-util/$REPO_NAME"
-  export GCU_PATH
   local GCU_UPDATER="$GCU_PATH/force_update_self.sh"
   [ -x "$GCU_UPDATER" ] || git clone "https://${GCU_REPO_AUTH#\
     }@gitlab.com/Instaffo/Scraping/$REPO_NAME.git" "$GCU_PATH" || return $?
