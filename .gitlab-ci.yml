@@ -27,3 +27,9 @@ job_test_nodejs_v10:
   image: node:10
   script:
     - sh sprout.sh
+
+job_test_nodejs_v12:
+  stage: test
+  image: node:12
+  script:
+    - sh sprout.sh
