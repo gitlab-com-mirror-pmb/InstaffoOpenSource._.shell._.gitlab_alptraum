@@ -20,6 +20,13 @@ sprout () {
 
   sprout_alpine_sanity || return $?
 
+  local A_EXEC="$ALPTRAUM_EXEC"
+  [ -n "$A_EXEC" ] || case "$1" in
+    gcu:* )
+      [ -n "$GCU_REPO_AUTH" ] || GCU_REPO_AUTH='@@guess'
+      A_EXEC="$1"; shift;;
+  esac
+
   local GCU_PATH=
   sprout_maybe_clone_gcu || return $?
 
@@ -30,12 +37,12 @@ sprout () {
 
   sprout_maybe_clone_custom_git_repo || return $?
 
-  local A_EXEC="$ALPTRAUM_EXEC"
-  [ -n "$A_EXEC" ] || case "$1" in
-    gcu:* ) A_EXEC="$1"; shift;;
-  esac
   case "$A_EXEC" in
-    gcu:* ) A_EXEC="$GCU_PATH/with_gcu_rc.sh ${A_EXEC#*:}";;
+    gcu:* )
+      [ -d "$GCU_PATH" ] || return 4$(
+        echo "E: GCU_PATH is not a directory: '$GCU_PATH'" >&2)
+      A_EXEC="$GCU_PATH/with_gcu_rc.sh ${A_EXEC#*:}"
+      ;;
   esac
 
   local CU_MSG="Godspeed! $A_EXEC $*" CU_TRIM=
@@ -99,18 +106,38 @@ sprout_maybe_clone_custom_git_repo () {
 
 
 sprout_maybe_clone_gcu () {
-  [ -n "$GCU_REPO_AUTH" ] || return 0
+  local AUTH="$GCU_REPO_AUTH"
   # ^-- may be configured via $ALP_RC; GCU will later read it from git config
+
+  case "$AUTH" in
+    '' ) return 0;;
+    @@guess ) sprout_guess_gcu_repo_auth || return $?;;
+  esac
+
   local REPO_NAME='GitLabCIUtilities'
   flowers "Install $REPO_NAME:"
   GCU_PATH="/usr/share/instaffo-util/$REPO_NAME"
   local GCU_UPDATER="$GCU_PATH/force_update_self.sh"
-  [ -x "$GCU_UPDATER" ] || git clone "https://${GCU_REPO_AUTH#\
+  [ -x "$GCU_UPDATER" ] || git clone "https://${AUTH#\
     }@gitlab.com/Instaffo/Scraping/$REPO_NAME.git" "$GCU_PATH" || return $?
   [ -d ./"$REPO_NAME" ] || ln --symbolic --target-directory=. \
     -- "$GCU_PATH" || return $?
   "$GCU_UPDATER" "$GCU_REPO_BRANCH" || return $?
   echo
+}
+
+
+sprout_guess_gcu_repo_auth () {
+  local PW_FN='instaffo_gitlab_ci_utilities_auth.txt'
+  AUTH="$(grep -vFe '#' -- \
+    ".git/$PW_FN" \
+    "$HOME/.config/git/$PW_FN" \
+    "$HOME/.$PW_FN" \
+    2>/dev/null | grep -Fe : -m 1)"
+  [ -n "$AUTH" ] && return 0
+
+  echo "E: failed to guess GCU repo auth" >&2
+  return 3
 }
 
 
