@@ -33,3 +33,10 @@ job_test_nodejs_v12:
   image: node:12
   script:
     - sh sprout.sh
+
+job_test_nodejs_v12_alpine:
+  stage: test
+  image: node:12-alpine
+  script:
+    - sh sprout.sh
+    - nodejs -e 'console.log("+OK nodejs command works");'
