@@ -80,6 +80,7 @@ sprout_alpine_sanity () {
     grep
     moreutils
     openssh-client    # for git+ssh://… repos
+    procps            # for custom format "ps"
     sed
     tar
     unzip
