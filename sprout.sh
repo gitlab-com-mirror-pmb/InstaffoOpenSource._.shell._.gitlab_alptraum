@@ -91,6 +91,16 @@ sprout_alpine_sanity () {
     s~^\s+([a-z])~\1~p
     ' | sort -u) || return $?
   echo
+
+  sprout_add_command_alias nodejs node || return $?
+}
+
+
+sprout_add_command_alias () {
+  local WANT_CMD="$1"; shift
+  local PROVIDER="$(which "$@" 2>/dev/null | grep -m 1 -Pe '^/')"
+  [ -x "$PROVIDER" ] || return 0
+  ln -vsT -- "$PROVIDER" /usr/bin/"$WANT_CMD" || return $?
 }
 
 
