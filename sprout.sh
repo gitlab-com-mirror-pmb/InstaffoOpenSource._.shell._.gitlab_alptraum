@@ -92,15 +92,22 @@ sprout_alpine_sanity () {
     ' | sort -u) || return $?
   echo
 
+  echo 'Install command aliases:'
   sprout_add_command_alias nodejs node || return $?
+  echo
 }
 
 
 sprout_add_command_alias () {
   local WANT_CMD="$1"; shift
   local PROVIDER="$(which "$@" 2>/dev/null | grep -m 1 -Pe '^/')"
-  [ -x "$PROVIDER" ] || return 0
-  ln -vsT -- "$PROVIDER" /usr/bin/"$WANT_CMD" || return $?
+  if [ -x "$PROVIDER" ]; then
+    ln -vsT -- "$PROVIDER" /usr/bin/"$WANT_CMD" || return $?
+  else
+    # Message alignment reference: ln -s would print
+    # ___"'/usr/bin/$WANT_CMD' -> '…'"
+    echo "# skip    $WANT_CMD: found none of [$*]"
+  fi
 }
 
 
