@@ -18,7 +18,13 @@ sprout () {
   local ALP_RC='.gitlab-alptraum.rc'
   [ ! -f "$ALP_RC" ] || . ./"$ALP_RC" || return $?
 
+  local PKG_MGR=
+  sprout_pkgmgr_detect_prepare || return $?
   sprout_alpine_sanity || return $?
+  echo
+  flowers 'Install extra packages:'
+  sprout_pkgmgr_install "$ALPTRAUM_EXTRA_PKG" || return $?
+  echo
 
   local A_EXEC="$ALPTRAUM_EXEC"
   [ -n "$A_EXEC" ] || case "$1" in
@@ -67,11 +73,11 @@ sprout_alpine_sanity () {
   fi
 
   [ -x /sbin/apk ] || return 4$(
-    echo "E: $FUNCNAME: no sane bash, no apk => giving up." >&2)
+    echo "E: sprout_alpine_sanity: no sane bash, no apk => giving up." >&2)
+    # ^-- no $FUNCNAME in dash!
 
   flowers "Sprout a sane shell environment:"
-  apk update || return $?
-  apk add $(echo '
+  sprout_pkgmgr_install '
     bash
     binutils
     coreutils
@@ -87,21 +93,70 @@ sprout_alpine_sanity () {
     util-linux
     wget
     zip
-    '"$ALPTRAUM_EXTRA_PKG" | sed -nre '
-    s~\s*#.*$~~
-    s~^\s+([a-z])~\1~p
-    ' | sort -u) || return $?
+    ' || return $?
   echo
 
   echo 'Install command aliases:'
   sprout_add_command_alias nodejs node || return $?
+}
+
+
+sprout_pkgmgr_detect_prepare () {
+  # Unfortunately, we can't just "apk add apt" because on 2019-06-15,
+  # alpine had no apk package for apt. :-(
+
   echo
+  flowers 'Detect and prepare package manager:'
+  PKG_MGR="$(which apt-get apk | grep -m 1 -Ee '^/')"
+  echo "Found '$PKG_MGR'."
+  PKG_MGR="$(basename "$PKG_MGR")"
+
+  case "$PKG_MGR" in
+    apt-get )
+      "$PKG_MGR" update || return $?
+      echo "Enable support for config triggers:"
+      sprout_pkgmgr_install apt-utils || return $?
+      echo "Now ready to install packages that may use config triggers."
+      ;;
+    apk )
+      "$PKG_MGR" update || return $?;;
+    * )
+      echo "E: can't find a supported package manager!" >&2
+      return 8;;
+  esac
+  echo
+}
+
+
+sprout_pkgmgr_install () {
+  [ -n "$*" ] || return 0
+  local PKGS="$(echo "$*" | sed -nre '
+    s~\s*#.*$~~
+    s~^\s*([a-z])~\1~p
+    ' | tr -s ' \n' '\n' | sort -u | tr -s ' \n' ' ')"
+  PKGS="${PKGS% }"
+  echo "D: sprout_pkgmgr_install: [$PKGS]" # no $FUNCNAME in dash!
+  [ -n "$PKGS" ] || return 0
+
+  case "$PKG_MGR" in
+    apt-get )
+      DEBIAN_FRONTEND=noninteractive \
+        "$PKG_MGR" install \
+        --assume-yes \
+        --no-install-recommends \
+        $PKGS; return $?;;
+    apk )
+      apk add $PKGS; return $?;;
+  esac
+
+  echo "E: unsupported package manager: '$PKG_MGR'" >&2
+  return 8
 }
 
 
 sprout_add_command_alias () {
   local WANT_CMD="$1"; shift
-  local PROVIDER="$(which "$@" 2>/dev/null | grep -m 1 -Pe '^/')"
+  local PROVIDER="$(which "$@" 2>/dev/null | grep -m 1 -Ee '^/')"
   if [ -x "$PROVIDER" ]; then
     ln -vsT -- "$PROVIDER" /usr/bin/"$WANT_CMD" || return $?
   else
