@@ -51,6 +51,12 @@ sprout () {
       ;;
   esac
 
+  local PREP="$ALPTRAUM_PREP_EVAL"
+  if [ -n "$PREP" ]; then
+    flowers "prep eval: $PREP"
+    eval "$PREP" || return $?
+  fi
+
   local CU_MSG="Godspeed! $A_EXEC $*" CU_TRIM=
   for CU_TRIM in dumb shell is dumb; do CU_MSG="${CU_MSG% }"; done
   flowers "$CU_MSG"
