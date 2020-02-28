@@ -53,10 +53,10 @@ sprout () {
       ;;
     web:* )
       flowers "Download web payload:"
-      local A_PAYLOAD_URL="${A_EXEC#*:}"
-      export A_PAYLOAD_URL
+      local ALPTRAUM_PAYLOAD_URL="${A_EXEC#*:}"
+      export ALPTRAUM_PAYLOAD_URL
       A_EXEC=/alptraum_payload
-      wget --output-document="$A_EXEC" -- "$A_PAYLOAD_URL" || return $?
+      wget --output-document="$A_EXEC" -- "$ALPTRAUM_PAYLOAD_URL" || return $?
       chmod a+x -- "$A_EXEC" || return $?
       sha1sum -b -- "$A_EXEC" || return $?
       ;;
