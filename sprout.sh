@@ -15,6 +15,7 @@ sprout () {
   export LANG
   local LANGUAGE="$LANG"
   export LANGUAGE
+  local REPO_PATH="$(readlink -f .)"
   local ALP_RC='.gitlab-alptraum.rc'
   [ ! -f "$ALP_RC" ] || . ./"$ALP_RC" || return $?
 
@@ -42,6 +43,7 @@ sprout () {
   fi
 
   sprout_maybe_clone_custom_git_repo || return $?
+  sprout_maybe_create_bin_symlinks || return $?
 
   case "$A_EXEC" in
     gcu:* )
@@ -193,6 +195,23 @@ sprout_maybe_clone_custom_git_repo () {
 }
 
 
+sprout_maybe_create_bin_symlinks () {
+  local SYM= TGT="$ALPTRAUM_BIN_SYM"
+  [ -n "$TGT" ] || return 0
+  flowers "Create /bin symlinks:"
+  for TGT in $TGT; do
+    case "$TGT" in
+      /* ) ;;
+      * ) TGT="$REPO_PATH/$TGT";;
+    esac
+    SYM="/bin/$(basename -- "$TGT" | sed -re '
+      s~\.[a-z0-9]{1,5}$~~
+      ')"
+    ln -svT -- "$TGT" "$SYM" || return $?
+  done
+}
+
+
 sprout_maybe_clone_gcu () {
   local AUTH="$GCU_REPO_AUTH"
   # ^-- may be configured via $ALP_RC; GCU will later read it from git config
@@ -208,8 +227,7 @@ sprout_maybe_clone_gcu () {
   local GCU_UPDATER="$GCU_PATH/force_update_self.sh"
   [ -x "$GCU_UPDATER" ] || git clone "https://${AUTH#\
     }@gitlab.com/Instaffo/Scraping/$REPO_NAME.git" "$GCU_PATH" || return $?
-  [ -d ./"$REPO_NAME" ] || ln --symbolic --target-directory=. \
-    -- "$GCU_PATH" || return $?
+  [ -d ./"$REPO_NAME" ] || ln -s -- "$GCU_PATH" . || return $?
   "$GCU_UPDATER" "$GCU_REPO_BRANCH" || return $?
   echo
 }
