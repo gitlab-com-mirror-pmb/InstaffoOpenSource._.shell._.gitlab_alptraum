@@ -8,7 +8,7 @@
 #
 # !! !! !! !! !! !! !! !! !! !! !! !! !! !! !! !! !! !! !! !! !! !! !! !! !! !!
 
-# Canot use "function" keyword because dash doesn't support that.
+# Cannot use "function" keyword because dash doesn't support that.
 
 sprout () {
   local LANG=en_US.UTF-8  # make error messages search engine-friendly
@@ -48,6 +48,15 @@ sprout () {
       [ -d "$GCU_PATH" ] || return 4$(
         echo "E: GCU_PATH is not a directory: '$GCU_PATH'" >&2)
       A_EXEC="$GCU_PATH/with_gcu_rc.sh ${A_EXEC#*:}"
+      ;;
+    web:* )
+      flowers "Download web payload:"
+      local A_PAYLOAD_URL="${A_EXEC#*:}"
+      export A_PAYLOAD_URL
+      A_EXEC=/alptraum_payload
+      wget --output-document="$A_EXEC" -- "$A_PAYLOAD_URL" || return $?
+      chmod a+x -- "$A_EXEC" || return $?
+      sha1sum -b -- "$A_EXEC" || return $?
       ;;
   esac
 
